@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>이미지 → 행렬 변환 도구 - AI 수학</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .instruction {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .instruction strong {
+            color: #667eea;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 15px 25px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .file-input-label:hover {
+            background: #764ba2;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .image-container {
+            margin-top: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        #originalImage {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 5px;
+        }
+
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+
+        .btn-secondary {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .zoom-controls.show {
+            display: flex;
+        }
+
+        .zoom-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .zoom-slider {
+            flex: 1;
+            height: 5px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .zoom-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .zoom-display {
+            min-width: 60px;
+            text-align: right;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .matrix-container {
+            position: relative;
+            display: none;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 20px;
+            overflow: auto;
+            max-height: 600px;
+        }
+
+        .matrix-container.show {
+            display: block;
+        }
+
+        .matrix-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        #pixelMatrix {
+            display: inline-grid;
+            gap: 0;
+        }
+
+        .pixel {
+            border: 0.5px solid rgba(0,0,0,0.05);
+        }
+
+        .pixel:hover {
+            border: 1px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 3px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .info-panel {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .info-panel strong {
+            color: #333;
+        }
+
+        .info-panel .item {
+            margin: 8px 0;
+        }
+
+        .rgb-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .rgb-section.show {
+            display: block;
+        }
+
+        .rgb-section h3 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .rgb-matrices {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .matrix-item {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            padding: 15px;
+        }
+
+        .matrix-item h4 {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .matrix-item.r h4 {
+            color: #e74c3c;
+        }
+
+        .matrix-item.g h4 {
+            color: #27ae60;
+        }
+
+        .matrix-item.b h4 {
+            color: #3498db;
+        }
+
+        .rgb-zoom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .rgb-note {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .channel-scroll {
+            overflow: auto;
+            max-height: 520px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .channel-canvas {
+            display: block;
+        }
+
+        .hover-info {
+            margin-top: 10px;
+            padding: 8px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+            visibility: hidden;
+        }
+
+        .hover-info.show {
+            visibility: visible;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ → 📊 이미지를 행렬로 변환</h1>
+        <p class="subtitle">이미지가 AI에게 어떤 "숫자 데이터(행렬)"로 보이는지 시각화하기</p>
+
+        <div class="instruction">
+            <strong>📌 이 도구의 목적:</strong><br>
+            이미지는 컴퓨터에 저장될 때 각 픽셀의 RGB값들로 이루어진 하나의 큰 행렬(테이블)이 됩니다.<br>
+            AI는 이 행렬을 분석해서 "이건 개다" "이건 고양이다"라고 판단합니다!
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>📤 원본 이미지</h2>
+                <div class="file-input-wrapper">
+                    <label class="file-input-label" for="imageInput">이미지 업로드</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                <div class="file-name" id="fileName"></div>
+
+                <div class="image-container" id="imageContainer" style="display: none;">
+                    <img id="originalImage" src="">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="convertBtn" onclick="convertToMatrix()" disabled>
+                        🔄 행렬로 변환 (100×100)
+                    </button>
+                    <button class="btn btn-secondary" id="resetBtn" onclick="resetApp()" style="display: none;">
+                        🔁 다시 시작
+                    </button>
+                </div>
+
+                <div class="info-panel" id="originalInfo" style="display: none;">
+                    <div class="item"><strong>원본 이미지 크기:</strong> <span id="originalSize">-</span></div>
+                    <div class="item"><strong>변환할 크기:</strong> 100 × 100 픽셀</div>
+                    <div class="item"><strong>총 데이터 크기:</strong> 100 × 100 × 3 (RGB) = 30,000개의 숫자</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📊 컬러 행렬 (100×100)</h2>
+
+                <div class="zoom-controls" id="zoomControls">
+                    <button class="zoom-btn" onclick="zoomOut()">−</button>
+                    <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="50" value="5" oninput="updateZoom()">
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <span class="zoom-display" id="zoomDisplay">5px</span>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    이미지를 행렬로 변환 중입니다...
+                </div>
+
+                <div class="matrix-container" id="matrixContainer">
+                    <div class="matrix-wrapper">
+                        <div id="pixelMatrix"></div>
+                    </div>
+                </div>
+
+                <div class="info-panel" id="matrixInfo" style="display: none;">
+                    <div class="item">✅ 변환 완료!</div>
+                    <div class="item"><strong>표시 방식:</strong> 각 칸 = 1개 픽셀 (색상 = RGB값)</div>
+                    <div class="item"><strong>칸 위에 마우스:</strong> RGB값 확인</div>
+                    <div class="item"><strong>축소/확대:</strong> 슬라이더나 +/− 버튼 사용</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- R, G, B 행렬 섹션 -->
+        <div class="rgb-section" id="rgbSection">
+            <h3>🎨 R, G, B 채널별 행렬 (100×100 숫자 + 회색톤 이미지)</h3>
+            <div class="rgb-zoom">
+                <button class="zoom-btn" onclick="rgbZoomStep(-2)">−</button>
+                <input type="range" id="rgbZoomSlider" class="zoom-slider" min="4" max="40" value="22" oninput="drawAllChannels()">
+                <button class="zoom-btn" onclick="rgbZoomStep(2)">+</button>
+                <span class="zoom-display" id="rgbZoomDisplay">22px</span>
+            </div>
+            <p class="rgb-note">칸 크기 14px 이상에서 숫자가 표시됩니다. 축소하면 회색톤 이미지 전체를, 확대하면 각 칸의 숫자를 볼 수 있어요. 세 행렬은 스크롤이 함께 움직입니다.</p>
+            <div class="rgb-matrices">
+                <div class="matrix-item r">
+                    <h4>🔴 Red (R) 채널</h4>
+                    <div class="channel-scroll" id="scrollR"><canvas id="canvasR" class="channel-canvas"></canvas></div>
+                    <div class="hover-info" id="hoverInfoR">-</div>
+                </div>
+                <div class="matrix-item g">
+                    <h4>🟢 Green (G) 채널</h4>
+                    <div class="channel-scroll" id="scrollG"><canvas id="canvasG" class="channel-canvas"></canvas></div>
+                    <div class="hover-info" id="hoverInfoG">-</div>
+                </div>
+                <div class="matrix-item b">
+                    <h4>🔵 Blue (B) 채널</h4>
+                    <div class="channel-scroll" id="scrollB"><canvas id="canvasB" class="channel-canvas"></canvas></div>
+                    <div class="hover-info" id="hoverInfoB">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentImage = null;
+        let pixelSize = 5;
+        let imageDataCache = null;
+        let rgbValues = { r: [], g: [], b: [] };
+
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = '파일: ' + file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                currentImage = new Image();
+                currentImage.onload = function() {
+                    const container = document.getElementById('imageContainer');
+                    const img = document.getElementById('originalImage');
+                    img.src = event.target.result;
+                    container.style.display = 'block';
+
+                    document.getElementById('originalSize').textContent = 
+                        `${currentImage.width} × ${currentImage.height}`;
+                    document.getElementById('originalInfo').style.display = 'block';
+                    document.getElementById('convertBtn').disabled = false;
+                    document.getElementById('resetBtn').style.display = 'inline-block';
+                };
+                currentImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function convertToMatrix() {
+            if (!currentImage) return;
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('matrixContainer').classList.remove('show');
+            document.getElementById('matrixInfo').style.display = 'none';
+            document.getElementById('zoomControls').classList.remove('show');
+            document.getElementById('rgbSection').classList.remove('show');
+
+            setTimeout(() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 100;
+                    canvas.height = 100;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(currentImage, 0, 0, 100, 100);
+
+                    imageDataCache = ctx.getImageData(0, 0, 100, 100);
+                    const data = imageDataCache.data;
+
+                    // RGB 값 추출
+                    rgbValues = { r: [], g: [], b: [] };
+                    for (let i = 0; i < data.length; i += 4) {
+                        rgbValues.r.push(data[i]);
+                        rgbValues.g.push(data[i + 1]);
+                        rgbValues.b.push(data[i + 2]);
+                    }
+
+                    // 컬러 픽셀 행렬 표시
+                    const pixelMatrix = document.getElementById('pixelMatrix');
+                    pixelMatrix.innerHTML = '';
+                    pixelMatrix.style.gridTemplateColumns = `repeat(100, ${pixelSize}px)`;
+                    pixelMatrix.style.gridTemplateRows = `repeat(100, ${pixelSize}px)`;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        const pixel = document.createElement('div');
+                        pixel.className = 'pixel';
+                        pixel.style.width = pixelSize + 'px';
+                        pixel.style.height = pixelSize + 'px';
+                        pixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                        pixel.title = `RGB(${r}, ${g}, ${b})`;
+                        pixelMatrix.appendChild(pixel);
+                    }
+
+                    // R, G, B 채널 표시
+                    displayRGBMatrices();
+
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('matrixContainer').classList.add('show');
+                    document.getElementById('matrixInfo').style.display = 'block';
+                    document.getElementById('zoomControls').classList.add('show');
+                    document.getElementById('convertBtn').disabled = true;
+                    document.getElementById('rgbSection').classList.add('show');
+
+                } catch (error) {
+                    console.error('변환 중 오류:', error);
+                    document.getElementById('loading').classList.remove('show');
+                    alert('이미지 변환 중 오류가 발생했습니다.');
+                }
+            }, 100);
+        }
+
+        const CHANNELS = [
+            { key: 'r', name: 'R', canvas: 'canvasR', scroll: 'scrollR', hover: 'hoverInfoR' },
+            { key: 'g', name: 'G', canvas: 'canvasG', scroll: 'scrollG', hover: 'hoverInfoG' },
+            { key: 'b', name: 'B', canvas: 'canvasB', scroll: 'scrollB', hover: 'hoverInfoB' }
+        ];
+        let rgbCell = 22;
+        let listenersReady = false;
+
+        function displayRGBMatrices() {
+            drawAllChannels();
+            if (!listenersReady) { setupChannelListeners(); listenersReady = true; }
+        }
+
+        function drawAllChannels() {
+            rgbCell = parseInt(document.getElementById('rgbZoomSlider').value);
+            document.getElementById('rgbZoomDisplay').textContent = rgbCell + 'px';
+            CHANNELS.forEach(ch => drawChannel(ch));
+        }
+
+        function drawChannel(ch) {
+            const values = rgbValues[ch.key];
+            if (!values || values.length === 0) return;
+            const canvas = document.getElementById(ch.canvas);
+            const size = rgbCell * 100;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            const showNumbers = rgbCell >= 14;
+            ctx.font = `${Math.floor(rgbCell * 0.4)}px 'Courier New', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let row = 0; row < 100; row++) {
+                for (let col = 0; col < 100; col++) {
+                    const v = values[row * 100 + col];
+                    const x = col * rgbCell;
+                    const y = row * rgbCell;
+                    // 배경: 회색톤 칸
+                    ctx.fillStyle = `rgb(${v},${v},${v})`;
+                    ctx.fillRect(x, y, rgbCell, rgbCell);
+                    if (showNumbers) {
+                        // 칸 테두리
+                        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+                        ctx.strokeRect(x + 0.5, y + 0.5, rgbCell - 1, rgbCell - 1);
+                        // 숫자: 밝은 칸은 검은 글씨, 어두운 칸은 흰 글씨
+                        ctx.fillStyle = v > 127 ? '#000' : '#fff';
+                        ctx.fillText(v, x + rgbCell / 2, y + rgbCell / 2 + 0.5);
+                    }
+                }
+            }
+        }
+
+        function setupChannelListeners() {
+            let syncing = false;
+            CHANNELS.forEach(ch => {
+                const scroller = document.getElementById(ch.scroll);
+                const canvas = document.getElementById(ch.canvas);
+                const hover = document.getElementById(ch.hover);
+
+                // 세 행렬 스크롤 동기화
+                scroller.addEventListener('scroll', () => {
+                    if (syncing) return;
+                    syncing = true;
+                    CHANNELS.forEach(other => {
+                        if (other.scroll !== ch.scroll) {
+                            const o = document.getElementById(other.scroll);
+                            o.scrollLeft = scroller.scrollLeft;
+                            o.scrollTop = scroller.scrollTop;
+                        }
+                    });
+                    requestAnimationFrame(() => { syncing = false; });
+                });
+
+                // 마우스 위치 값 표시
+                canvas.addEventListener('mousemove', (e) => {
+                    const col = Math.floor(e.offsetX / rgbCell);
+                    const row = Math.floor(e.offsetY / rgbCell);
+                    if (col < 0 || col >= 100 || row < 0 || row >= 100) return;
+                    const idx = row * 100 + col;
+                    CHANNELS.forEach(c => {
+                        const h = document.getElementById(c.hover);
+                        h.textContent = `${c.name}[${row + 1}행, ${col + 1}열] = ${rgbValues[c.key][idx]}`;
+                        h.classList.add('show');
+                    });
+                });
+                canvas.addEventListener('mouseleave', () => {
+                    CHANNELS.forEach(c => document.getElementById(c.hover).classList.remove('show'));
+                });
+            });
+        }
+
+        function rgbZoomStep(d) {
+            const slider = document.getElementById('rgbZoomSlider');
+            slider.value = Math.min(40, Math.max(4, parseInt(slider.value) + d));
+            drawAllChannels();
+        }
+
+        function updateZoom() {
+            pixelSize = parseInt(document.getElementById('zoomSlider').value);
+            document.getElementById('zoomDisplay').textContent = pixelSize + 'px';
+
+            const pixelMatrix = document.getElementById('pixelMatrix');
+            pixelMatrix.style.gridTemplateColumns = `repeat(100, ${pixelSize}px)`;
+            pixelMatrix.style.gridTemplateRows = `repeat(100, ${pixelSize}px)`;
+
+            const pixels = pixelMatrix.querySelectorAll('.pixel');
+            pixels.forEach(pixel => {
+                pixel.style.width = pixelSize + 'px';
+                pixel.style.height = pixelSize + 'px';
+            });
+        }
+
+        function zoomIn() {
+            const slider = document.getElementById('zoomSlider');
+            if (parseInt(slider.value) < 50) {
+                slider.value = parseInt(slider.value) + 1;
+                updateZoom();
+            }
+        }
+
+        function zoomOut() {
+            const slider = document.getElementById('zoomSlider');
+            if (parseInt(slider.value) > 1) {
+                slider.value = parseInt(slider.value) - 1;
+                updateZoom();
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('imageInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('imageContainer').style.display = 'none';
+            document.getElementById('originalImage').src = '';
+            document.getElementById('matrixContainer').classList.remove('show');
+            document.getElementById('pixelMatrix').innerHTML = '';
+            document.getElementById('originalInfo').style.display = 'none';
+            document.getElementById('matrixInfo').style.display = 'none';
+            document.getElementById('zoomControls').classList.remove('show');
+            document.getElementById('rgbSection').classList.remove('show');
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('zoomSlider').value = 5;
+            document.getElementById('zoomDisplay').textContent = '5px';
+            pixelSize = 5;
+            currentImage = null;
+            imageDataCache = null;
+            rgbValues = { r: [], g: [], b: [] };
+        }
+    </script>
+</body>
+</html>
